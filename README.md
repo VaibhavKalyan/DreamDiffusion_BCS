@@ -75,7 +75,8 @@ EEG Embedding  ──▶  [CLIP Projector]  ──▶  CLIP Space
 
 ```
 DreamDiffusion_BCS/
-├── DreamDiffusion.ipynb          # End-to-end pipeline notebook
+├── DreamDiffusion_Colab_Clean.ipynb  # End-to-end pipeline notebook (Kaggle ready)
+├── DreamDiffusion.ipynb          # Original development notebook
 ├── RelatedPaper.pdf              # Original DreamDiffusion paper (Bai et al., 2023)
 ├── Week 2 Resources.docx         # BCS project study resources
 ├── .gitignore                    # Excludes large model weights and datasets
@@ -88,13 +89,14 @@ DreamDiffusion_BCS/
 
 ## Pipeline Walkthrough
 
-The `DreamDiffusion.ipynb` notebook covers the full end-to-end pipeline in the following stages:
+The `DreamDiffusion_Colab_Clean.ipynb` notebook covers the pipeline optimized for Kaggle/Colab execution. Since `latest.pth` (the fine-tuned UNet and projector weights) is already provided, the pipeline focuses heavily on **Inference**.
 
-1. **EEG Preprocessing** — Loading, filtering, and standardizing raw EEG signals using `MNE`; applying the `eeg_5_95_std` normalization checkpoint.
-2. **TMSM Encoder Training** — Self-supervised pre-training of the EEG transformer encoder with temporal masking.
-3. **CLIP Projector Training** — Fine-tuning the EEG-to-CLIP projector (`eeg_to_clip_projector_best.pth`) using contrastive alignment loss against CLIP image embeddings (`clip_image_embeddings.pt`).
-4. **Stable Diffusion Fine-tuning** — Replacing the text-conditioning pathway in Stable Diffusion with the EEG projector output; fine-tuning the model on paired EEG–ImageNet data.
-5. **Inference & Visualization** — Generating images from held-out EEG test signals and qualitatively evaluating generation quality.
+1. **Setup & Verification** — Setting up the environment on Kaggle, verifying GPU availability (T4x2 recommended), and checking the dataset directory.
+2. **EEG Preprocessing** — Loading, filtering, and standardizing raw EEG signals; applying the `eeg_5_95_std` normalization checkpoint.
+3. **EEG to CLIP Embedding** — Passing the preprocessed EEG signals through the pre-trained `EEGToCLIPProjector` (`eeg_to_clip_projector_best (1).pth`).
+4. **Stable Diffusion Inference** — Replacing the text-conditioning pathway in Stable Diffusion with the EEG projector output. Loading the pre-trained weights (`latest.pth`) and generating images from held-out EEG test signals.
+
+*(Note: The notebook also contains the training pipeline cells, which can be run if you wish to resume training or train on new data.)*
 
 ---
 
@@ -105,30 +107,33 @@ The `DreamDiffusion.ipynb` notebook covers the full end-to-end pipeline in the f
 ```bash
 pip install torch torchvision
 pip install diffusers transformers accelerate
-pip install ftfy regex tqdm
+pip install ftfy regex tqdm wandb
 pip install git+https://github.com/openai/CLIP.git
-pip install mne numpy matplotlib
+pip install mne numpy matplotlib pandas tensorflow
 ```
 
 ### Required Files (not in repo)
 
-The following large files must be downloaded separately:
+The following large files must be downloaded and hosted as a Kaggle Dataset (or Google Drive for Colab):
 
 | File | Purpose | Size |
 |---|---|---|
 | `eeg_5_95_std.pth` | Pre-trained EEG encoder weights | ~3.1 GB |
 | `latest.pth` | Fine-tuned Stable Diffusion checkpoint | ~4.1 GB |
-| `eeg_to_clip_projector_best.pth` | Trained CLIP projector weights | ~6 MB |
+| `eeg_to_clip_projector_best (1).pth` | Trained CLIP projector weights | ~6 MB |
 | `clip_image_embeddings.pt` | Pre-computed CLIP image embeddings | ~4 MB |
 | `imageNet_images/` | ImageNet stimulus images used during EEG recording | ~224 MB |
 
-### Running the Notebook
+### Running the Notebook (Recommended: Kaggle)
 
-```bash
-jupyter notebook DreamDiffusion.ipynb
-```
+Due to memory constraints and GPU quotas on Google Colab, **Kaggle** is highly recommended for running this pipeline.
 
-Ensure all required `.pth` files are placed in the root directory before running.
+1. Go to [Kaggle](https://www.kaggle.com) and create a new notebook.
+2. Set the Accelerator to **GPU T4 x2**.
+3. Create a dataset named `dreamdiffusion-bcs` (e.g., uploaded by `vaibhavkalyan`) containing all the `.pth` files and the `imageNet_images` folder.
+4. Import `DreamDiffusion_Colab_Clean.ipynb` into the notebook.
+5. Add the dataset to your notebook environment.
+6. Run the cells in order to perform inference. (For inference only, you can run cells 1-9 and then skip directly to the last cell).
 
 ---
 
